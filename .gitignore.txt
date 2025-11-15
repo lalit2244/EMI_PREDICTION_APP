@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+emi_env/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large data files (don't push to GitHub)
+data/*.csv
+*.csv.gz
+*.pkl.gz
+
+# But keep the data folder structure
+!data/.gitkeep
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# MLflow runs (too large for GitHub)
+mlruns/
