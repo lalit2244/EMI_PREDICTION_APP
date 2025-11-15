@@ -4,6 +4,8 @@
 
 **Project Name**: EMIPredict AI - Intelligent Financial Risk Assessment Platform
 
+**Project Link**: https://emipredictionapp-jvaztnb4tr99dly52jb9ek.streamlit.app/
+
 **Duration**: 14 Days
 
 **Domain**: FinTech and Banking
