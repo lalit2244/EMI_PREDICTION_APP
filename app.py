@@ -255,49 +255,239 @@ if 'current_page' not in st.session_state:
 # Load models and preprocessors
 @st.cache_resource
 def load_models():
-    """Load all saved models and preprocessing objects"""
+    """Load or train models"""
     try:
+        # Check if models exist
+        model_exists = (
+            os.path.exists('models/xgboost_classifier.pkl') and
+            os.path.exists('models/xgboost_regressor.pkl')
+        )
+        
+        if not model_exists:
+            # Train lightweight models on-the-fly
+            st.info("🔄 Training models for the first time... (this takes 2-3 minutes)")
+            return train_lightweight_models()
+        
+        # Load existing models
+        models = {}
+        
         # Try to load best models first
         model_files = {
             'classifier': ['xgboost_classifier.pkl', 'random_forest_classifier.pkl', 'logistic_regression_classifier.pkl'],
             'regressor': ['xgboost_regressor.pkl', 'random_forest_regressor.pkl', 'linear_regression.pkl']
         }
         
-        models = {}
-        
         # Load classifier
         for clf_file in model_files['classifier']:
-            try:
+            if os.path.exists(f'models/{clf_file}'):
                 models['classifier'] = joblib.load(f'models/{clf_file}')
                 break
-            except:
-                continue
         
         # Load regressor
         for reg_file in model_files['regressor']:
-            try:
+            if os.path.exists(f'models/{reg_file}'):
                 models['regressor'] = joblib.load(f'models/{reg_file}')
                 break
-            except:
-                continue
         
         # Load preprocessing objects
-        models['scaler'] = joblib.load('models/scaler.pkl')
-        models['label_encoders'] = joblib.load('models/label_encoders.pkl')
-        models['target_encoder'] = joblib.load('models/target_encoder.pkl')
-        models['feature_columns'] = joblib.load('models/feature_columns.pkl')
+        if os.path.exists('models/scaler.pkl'):
+            models['scaler'] = joblib.load('models/scaler.pkl')
+            models['label_encoders'] = joblib.load('models/label_encoders.pkl')
+            models['target_encoder'] = joblib.load('models/target_encoder.pkl')
+            models['feature_columns'] = joblib.load('models/feature_columns.pkl')
+        else:
+            # If preprocessing objects don't exist, train everything
+            return train_lightweight_models()
         
         return models
     except Exception as e:
-        st.error(f"Error loading models: {str(e)}")
-        return None
+        st.warning(f"Could not load pre-trained models: {str(e)}")
+        st.info("🔄 Training lightweight models... (this takes 2-3 minutes)")
+        return train_lightweight_models()
+
+@st.cache_resource
+def train_lightweight_models():
+    """Train lightweight models on generated data"""
+    from sklearn.linear_model import LogisticRegression, LinearRegression
+    from sklearn.preprocessing import LabelEncoder, StandardScaler
+    from sklearn.model_selection import train_test_split
+    
+    # Generate training data
+    st.write("📊 Generating training data (20K records)...")
+    df = generate_sample_data(20000)
+    
+    # Prepare features
+    st.write("🔧 Preparing features...")
+    feature_cols = [col for col in df.columns if col not in ['emi_eligibility', 'max_monthly_emi']]
+    X = df[feature_cols].copy()
+    y_classification = df['emi_eligibility'].copy()
+    y_regression = df['max_monthly_emi'].copy()
+    
+    # Encode categorical variables
+    categorical_cols = X.select_dtypes(include=['object']).columns.tolist()
+    label_encoders = {}
+    for col in categorical_cols:
+        le = LabelEncoder()
+        X[col] = le.fit_transform(X[col].astype(str))
+        label_encoders[col] = le
+    
+    # Encode target
+    le_target = LabelEncoder()
+    y_classification_encoded = le_target.fit_transform(y_classification)
+    
+    # Split data
+    X_train, X_test, y_class_train, y_class_test, y_reg_train, y_reg_test = train_test_split(
+        X, y_classification_encoded, y_regression, test_size=0.2, random_state=42
+    )
+    
+    # Scale features
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    
+    # Train classification model
+    st.write("🎯 Training classification model...")
+    classifier = LogisticRegression(max_iter=500, random_state=42)
+    classifier.fit(X_train_scaled, y_class_train)
+    
+    # Train regression model
+    st.write("📊 Training regression model...")
+    regressor = LinearRegression()
+    regressor.fit(X_train_scaled, y_reg_train)
+    
+    st.success("✅ Models trained successfully!")
+    
+    # Return models
+    return {
+        'classifier': classifier,
+        'regressor': regressor,
+        'scaler': scaler,
+        'label_encoders': label_encoders,
+        'target_encoder': le_target,
+        'feature_columns': feature_cols
+    }
+
+# Generate dataset function
+@st.cache_data
+def generate_sample_data(n_records=50000):
+    """Generate sample EMI dataset for demo purposes"""
+    import random
+    
+    np.random.seed(42)
+    random.seed(42)
+    
+    data_list = []
+    
+    scenarios = [
+        'E-commerce Shopping EMI',
+        'Home Appliances EMI', 
+        'Vehicle EMI',
+        'Personal Loan EMI',
+        'Education EMI'
+    ]
+    
+    for _ in range(n_records):
+        # Demographics
+        age = random.randint(25, 60)
+        gender = random.choice(['Male', 'Female'])
+        marital_status = random.choice(['Single', 'Married'])
+        education = random.choice(['High School', 'Graduate', 'Post Graduate', 'Professional'])
+        
+        # Employment
+        monthly_salary = random.randint(15000, 200000)
+        employment_type = random.choice(['Private', 'Government', 'Self-employed'])
+        years_of_employment = random.randint(1, min(age - 22, 35))
+        company_type = random.choice(['MNC', 'Startup', 'SME', 'Large Enterprise'])
+        
+        # Housing
+        house_type = random.choice(['Rented', 'Own', 'Family'])
+        monthly_rent = random.randint(5000, 50000) if house_type == 'Rented' else 0
+        family_size = random.randint(1, 6)
+        dependents = random.randint(0, 3) if marital_status == 'Married' else random.choice([0, 1])
+        
+        # Expenses
+        school_fees = random.randint(0, 20000) if dependents > 0 else 0
+        college_fees = random.randint(0, 50000) if dependents >= 2 else 0
+        travel_expenses = random.randint(2000, 15000)
+        groceries_utilities = int(monthly_salary * random.uniform(0.15, 0.30))
+        other_monthly_expenses = int(monthly_salary * random.uniform(0.05, 0.15))
+        
+        # Financial
+        existing_loans = random.choice(['Yes', 'No'])
+        current_emi_amount = random.randint(3000, 30000) if existing_loans == 'Yes' else 0
+        credit_score = random.randint(300, 850)
+        bank_balance = int(monthly_salary * random.uniform(0.5, 5))
+        emergency_fund = int(monthly_salary * random.uniform(0.2, 3))
+        
+        # Loan details
+        emi_scenario = random.choice(scenarios)
+        if emi_scenario == 'E-commerce Shopping EMI':
+            requested_amount = random.randint(10000, 200000)
+            requested_tenure = random.randint(3, 24)
+        elif emi_scenario == 'Home Appliances EMI':
+            requested_amount = random.randint(20000, 300000)
+            requested_tenure = random.randint(6, 36)
+        elif emi_scenario == 'Vehicle EMI':
+            requested_amount = random.randint(80000, 1500000)
+            requested_tenure = random.randint(12, 84)
+        elif emi_scenario == 'Personal Loan EMI':
+            requested_amount = random.randint(50000, 1000000)
+            requested_tenure = random.randint(12, 60)
+        else:  # Education
+            requested_amount = random.randint(50000, 500000)
+            requested_tenure = random.randint(6, 48)
+        
+        # Calculate targets
+        total_expenses = monthly_rent + school_fees + college_fees + travel_expenses + groceries_utilities + other_monthly_expenses + current_emi_amount
+        disposable_income = monthly_salary - total_expenses
+        credit_factor = (credit_score - 300) / 550
+        max_monthly_emi = int(disposable_income * 0.40 * credit_factor)
+        max_monthly_emi = max(500, min(max_monthly_emi, 50000))
+        
+        # Calculate eligibility
+        interest_rate = 0.10 if credit_score > 750 else 0.12 if credit_score > 650 else 0.16
+        monthly_rate = interest_rate / 12
+        requested_emi = (requested_amount * monthly_rate * (1 + monthly_rate)**requested_tenure) / ((1 + monthly_rate)**requested_tenure - 1)
+        emi_to_income = requested_emi / monthly_salary
+        debt_to_income = (current_emi_amount + requested_emi) / monthly_salary
+        
+        if credit_score >= 700 and emi_to_income <= 0.35 and debt_to_income <= 0.50:
+            emi_eligibility = 'Eligible'
+        elif credit_score >= 600 and emi_to_income <= 0.45 and debt_to_income <= 0.60:
+            emi_eligibility = 'High_Risk'
+        else:
+            emi_eligibility = 'Not_Eligible'
+        
+        data_list.append({
+            'age': age, 'gender': gender, 'marital_status': marital_status,
+            'education': education, 'monthly_salary': monthly_salary,
+            'employment_type': employment_type, 'years_of_employment': years_of_employment,
+            'company_type': company_type, 'house_type': house_type,
+            'monthly_rent': monthly_rent, 'family_size': family_size,
+            'dependents': dependents, 'school_fees': school_fees,
+            'college_fees': college_fees, 'travel_expenses': travel_expenses,
+            'groceries_utilities': groceries_utilities,
+            'other_monthly_expenses': other_monthly_expenses,
+            'existing_loans': existing_loans, 'current_emi_amount': current_emi_amount,
+            'credit_score': credit_score, 'bank_balance': bank_balance,
+            'emergency_fund': emergency_fund, 'emi_scenario': emi_scenario,
+            'requested_amount': requested_amount, 'requested_tenure': requested_tenure,
+            'emi_eligibility': emi_eligibility, 'max_monthly_emi': max_monthly_emi
+        })
+    
+    return pd.DataFrame(data_list)
 
 # Load dataset
 @st.cache_data
 def load_data():
     """Load the EMI dataset with proper data type handling"""
     try:
-        df = pd.read_csv('data/EMI_dataset.csv')
+        # Try to load from file first
+        if os.path.exists('data/EMI_dataset.csv'):
+            df = pd.read_csv('data/EMI_dataset.csv')
+        else:
+            # Generate sample data if file doesn't exist
+            st.info("📊 Generating sample dataset (50K records)...")
+            df = generate_sample_data(50000)
         
         # Convert numeric columns to proper types
         numeric_columns = [
@@ -327,7 +517,8 @@ def load_data():
         return df
     except Exception as e:
         st.error(f"Error loading data: {str(e)}")
-        return None
+        # Fallback: generate data
+        return generate_sample_data(50000)
 
 # Sidebar navigation
 def sidebar_navigation():
@@ -425,9 +616,11 @@ def home_page():
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.markdown("""
+        df = st.session_state.get('data')
+        record_count = len(df) if df is not None else 50000
+        st.markdown(f"""
             <div class="stats-card">
-                <p class="stats-number">400K+</p>
+                <p class="stats-number">{record_count//1000}K+</p>
                 <p class="stats-label">Training Records</p>
             </div>
         """, unsafe_allow_html=True)
