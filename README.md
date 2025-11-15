@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MLflow](https://img.shields.io/badge/MLflow-Tracking-0194E2?style=flat&logo=mlflow&logoColor=white)](https://mlflow.org/)
 
-> **🚀 [Try Live Demo →](https://your-app-name.streamlit.app)**
+> **🚀 [Try Live Demo →](https://emipredictionapp-jvaztnb4tr99dly52jb9ek.streamlit.app/) **
 
 <div align="center">
   <img src="https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge" alt="Status"/>
