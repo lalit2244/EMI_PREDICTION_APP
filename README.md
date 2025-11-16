@@ -78,7 +78,7 @@ This project was developed as a capstone project for a **Data Science & AI/ML in
 
 ## 🌐 Live Demo
 
-### **🎉 [Access Live Application](https://your-app-name.streamlit.app)**
+### **🎉 [Access Live Application](https://emipredictionapp-jvaztnb4tr99dly52jb9ek.streamlit.app/)**
 
 **Replace `your-app-name` with your actual Streamlit app URL!**
 
@@ -321,7 +321,7 @@ git push origin main
 - Deploy!
 
 3. **Access your app**
-- URL: `https://your-app-name.streamlit.app`
+- URL: `https://emipredictionapp-jvaztnb4tr99dly52jb9ek.streamlit.app/`
 - Share with anyone worldwide!
 
 ### **Environment Variables**
@@ -521,6 +521,6 @@ If you found this project helpful, please consider giving it a ⭐ star on GitHu
 
 **Made with ❤️ and Python | © 2025 EMIPredict AI**
 
-**🚀 [Try Live Demo](https://your-app-name.streamlit.app)**
+**🚀 [Try Live Demo](https://emipredictionapp-jvaztnb4tr99dly52jb9ek.streamlit.app/)**
 
 </div>
