@@ -22,7 +22,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for modern design
+# Custom CSS for modern responsive design
 st.markdown("""
     <style>
     /* Import Google Fonts */
@@ -33,10 +33,10 @@ st.markdown("""
         font-family: 'Poppins', sans-serif;
     }
     
-    /* Main Header Styles */
+    /* Main Header Styles - Responsive */
     .main-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 3rem 2rem;
+        padding: 2rem 1rem;
         border-radius: 20px;
         text-align: center;
         color: white;
@@ -46,16 +46,32 @@ st.markdown("""
     }
     
     .main-header h1 {
-        font-size: 3.5rem;
+        font-size: clamp(1.8rem, 5vw, 3.5rem);
         font-weight: 700;
         margin: 0;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
     }
     
     .main-header p {
-        font-size: 1.3rem;
+        font-size: clamp(0.9rem, 3vw, 1.3rem);
         margin-top: 1rem;
         opacity: 0.95;
+    }
+    
+    /* Mobile Responsive Adjustments */
+    @media screen and (max-width: 768px) {
+        .main-header {
+            padding: 1.5rem 1rem;
+            border-radius: 15px;
+        }
+        
+        .main-header h1 {
+            font-size: 2rem;
+        }
+        
+        .main-header p {
+            font-size: 1rem;
+        }
     }
     
     /* Feature Cards */
